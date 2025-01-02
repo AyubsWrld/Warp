@@ -1,0 +1,94 @@
+#!/usr/sbin/bash
+
+# Define color codes
+RED_BG='\033[41m'
+GREEN_BG='\033[33m'
+YELLOW_BG='\033[43m'
+BLUE_BG='\033[44m'
+RESET='\033[0m'
+
+# Define options and their paths
+declare -A Options=(
+  ["Graphite"]="/mnt/e/Graphite/"
+  ["Script"]="/usr/sbin/"
+  ["Notes"]="/mnt/e/Zettelkatsen/"
+  ["sr"]="/mnt/e/scripts/"
+)
+
+# Define the order of keys
+key_order=("Graphite" "Script" "Notes" "sr")
+selected_idx=0
+
+draw_screen() {
+  clear
+  LONGEST=0
+  for VAR in "${!Options[@]}"; do
+    LEN=${#VAR}
+    if [[ $LONGEST -lt $LEN ]]; then
+      LONGEST=$LEN
+    fi
+  done
+
+  TOPPADDING=""
+  for ((i = 0; i < $LONGEST; i++)); do
+    TOPPADDING="${TOPPADDING}\u2500"
+  done
+
+  MAX=$((${#Options[@]} - 1))
+  idx=0
+
+  BOX_WIDTH=60
+
+  for VAR in "${key_order[@]}"; do
+    LEFT_PADDING="   "
+    REMAINING_SPACE=$((BOX_WIDTH - ${#VAR} - 7))
+
+    if [[ $idx == 0 ]]; then
+      echo -e "     \u250C${TOPPADDING}\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"
+      if [[ $idx == $selected_idx ]]; then
+        echo -e "     ${BLUE_BG}\u2502${LEFT_PADDING}$VAR$(printf '%*s' $REMAINING_SPACE '')\u2502${RESET}"
+      else
+        echo -e "     \u2502${LEFT_PADDING}$VAR$(printf '%*s' $REMAINING_SPACE '')\u2502"
+      fi
+    elif [[ $idx == $MAX ]]; then
+      if [[ $idx == $selected_idx ]]; then
+        echo -e "     ${BLUE_BG}\u2502${LEFT_PADDING}$VAR$(printf '%*s' $REMAINING_SPACE '')\u2502${RESET}"
+      else
+        echo -e "     \u2502${LEFT_PADDING}$VAR$(printf '%*s' $REMAINING_SPACE '')\u2502"
+      fi
+      # Bottom border
+      echo -e "     \u2514${TOPPADDING}\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"
+    else
+      if [[ $idx == $selected_idx ]]; then
+        echo -e "     ${BLUE_BG}\u2502${LEFT_PADDING}$VAR$(printf '%*s' $REMAINING_SPACE '')\u2502${RESET}"
+      else
+        echo -e "     \u2502${LEFT_PADDING}$VAR$(printf '%*s' $REMAINING_SPACE '')\u2502"
+      fi
+    fi
+    idx=$((idx + 1))
+  done
+}
+
+# Initial draw
+draw_screen
+
+# Handle keyboard input
+STATUS_CODE=""
+while [[ $STATUS_CODE != "q" ]]; do
+  read -n 1 -s STATUS_CODE
+  if [[ $STATUS_CODE == "k" ]]; then
+    if [[ $selected_idx -gt 0 ]]; then
+      selected_idx=$((selected_idx - 1))
+    fi
+    draw_screen
+  elif [[ $STATUS_CODE == "j" ]]; then
+    if [[ $selected_idx -lt $MAX ]]; then
+      selected_idx=$((selected_idx + 1))
+    fi
+    draw_screen
+  elif [[ -z $STATUS_CODE ]]; then
+    cd ${Options[${key_order[selected_idx]}]}
+    clear
+    break
+  fi
+done
