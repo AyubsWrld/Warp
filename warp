@@ -1,94 +1,65 @@
-#!/usr/sbin/bash
+#!/usr/bin/env bash
 
-# Define color codes
-RED_BG='\033[41m'
-GREEN_BG='\033[33m'
-YELLOW_BG='\033[43m'
-BLUE_BG='\033[44m'
-RESET='\033[0m'
-
-# Define options and their paths
-declare -A Options=(
-  ["Graphite"]="/mnt/e/Graphite/"
-  ["Script"]="/usr/sbin/"
-  ["Notes"]="/mnt/e/Zettelkatsen/"
-  ["sr"]="/mnt/e/scripts/"
+declare -A SAVED_DIRS=(
+  [" TypeScript"]="/mnt/e/Learning/Typescript/"
+  [" TypeORM"]="/mnt/e/Notes/TypeORM"
+  [" FFMPEG"]="/mnt/e/Notes/FFMPEG"
+  [" HTTP"]="/mnt/e/Notes/XMLHttpRequest"
+  ["󱜥 Scripts"]="/usr/sbin"
+  ["󰍛 Graphite"]="/mnt/e/Graphite"
 )
-
-# Define the order of keys
-key_order=("Graphite" "Script" "Notes" "sr")
-selected_idx=0
-
-draw_screen() {
+howto() {
   clear
-  LONGEST=0
-  for VAR in "${!Options[@]}"; do
-    LEN=${#VAR}
-    if [[ $LONGEST -lt $LEN ]]; then
-      LONGEST=$LEN
-    fi
-  done
 
-  TOPPADDING=""
-  for ((i = 0; i < $LONGEST; i++)); do
-    TOPPADDING="${TOPPADDING}\u2500"
-  done
+  selected_dir=$(printf "%s\n" "${!SAVED_DIRS[@]}" |
+    fzf --border=rounded \
+      --border-label="📁 Select Project" \
+      --border-label-pos=3 \
+      --margin=30% \
+      --padding=1 \
+      --layout=reverse \
+      --height=80% \
+      --min-height=5 \
+      --color='border:#c1ebf5')
 
-  MAX=$((${#Options[@]} - 1))
-  idx=0
+  if [ -z "$selected_dir" ]; then
+    echo "No directory selected."
+    return
+  fi
 
-  BOX_WIDTH=60
-
-  for VAR in "${key_order[@]}"; do
-    LEFT_PADDING="   "
-    REMAINING_SPACE=$((BOX_WIDTH - ${#VAR} - 7))
-
-    if [[ $idx == 0 ]]; then
-      echo -e "     \u250C${TOPPADDING}\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"
-      if [[ $idx == $selected_idx ]]; then
-        echo -e "     ${BLUE_BG}\u2502${LEFT_PADDING}$VAR$(printf '%*s' $REMAINING_SPACE '')\u2502${RESET}"
-      else
-        echo -e "     \u2502${LEFT_PADDING}$VAR$(printf '%*s' $REMAINING_SPACE '')\u2502"
-      fi
-    elif [[ $idx == $MAX ]]; then
-      if [[ $idx == $selected_idx ]]; then
-        echo -e "     ${BLUE_BG}\u2502${LEFT_PADDING}$VAR$(printf '%*s' $REMAINING_SPACE '')\u2502${RESET}"
-      else
-        echo -e "     \u2502${LEFT_PADDING}$VAR$(printf '%*s' $REMAINING_SPACE '')\u2502"
-      fi
-      # Bottom border
-      echo -e "     \u2514${TOPPADDING}\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"
-    else
-      if [[ $idx == $selected_idx ]]; then
-        echo -e "     ${BLUE_BG}\u2502${LEFT_PADDING}$VAR$(printf '%*s' $REMAINING_SPACE '')\u2502${RESET}"
-      else
-        echo -e "     \u2502${LEFT_PADDING}$VAR$(printf '%*s' $REMAINING_SPACE '')\u2502"
-      fi
-    fi
-    idx=$((idx + 1))
-  done
+  DIR="${SAVED_DIRS[$selected_dir]}"
+  cd "$DIR" || return
+  echo "Changed directory to: $DIR"
+  exec bash # Start a new shell session in the selected directory
 }
 
-# Initial draw
-draw_screen
+add_dir() {
+  echo "Enter directory name (no spaces):"
+  read -r dirname
+  echo "Enter directory path:"
+  read -r dirpath
+  echo "SAVED_DIRS[\"$dirname\"]=\"$dirpath\"" >>~/.config/howto/dirs.sh
+  source ~/.config/howto/dirs.sh
+}
 
-# Handle keyboard input
-STATUS_CODE=""
-while [[ $STATUS_CODE != "q" ]]; do
-  read -n 1 -s STATUS_CODE
-  if [[ $STATUS_CODE == "k" ]]; then
-    if [[ $selected_idx -gt 0 ]]; then
-      selected_idx=$((selected_idx - 1))
-    fi
-    draw_screen
-  elif [[ $STATUS_CODE == "j" ]]; then
-    if [[ $selected_idx -lt $MAX ]]; then
-      selected_idx=$((selected_idx + 1))
-    fi
-    draw_screen
-  elif [[ -z $STATUS_CODE ]]; then
-    cd ${Options[${key_order[selected_idx]}]}
-    clear
-    break
+init_config() {
+  mkdir -p ~/.config/howto
+  if [ ! -f ~/.config/howto/dirs.sh ]; then
+    echo "#!/bin/bash" >~/.config/howto/dirs.sh
+    echo "declare -A SAVED_DIRS" >>~/.config/howto/dirs.sh
+    echo "SAVED_DIRS[\"typescript\"]=\"/mnt/e/Learning/Typescript/\"" >>~/.config/howto/dirs.sh
   fi
-done
+  source ~/.config/howto/dirs.sh
+}
+
+init_config
+
+case "$1" in
+"add")
+  add_dir
+  ;;
+*)
+  howto
+  ;;
+esac
+
