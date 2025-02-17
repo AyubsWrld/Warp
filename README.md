@@ -3,7 +3,7 @@
 **Warp** is a lightweight Terminal User Interface (TUI) tool designed to make directory navigation fast, intuitive, and developer-friendly. Forget wasting time scrolling through directory trees—jump straight to where you need to go with Warp.  
 
 
-![](assets/demo.gif)  
+![](assets/dem.gif)  
 
 ---
 
